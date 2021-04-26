@@ -1,5 +1,2 @@
 # Your discord bot token from https://discord.com/developers/applications
 DCTOKEN=ABCDEFG123456.-/+=_*
-
-# Your mongoDB URI
-MONGODB_URI=mongodb://user:pass@host:port/?authSource=admin&readPreference=primary&ssl=false
