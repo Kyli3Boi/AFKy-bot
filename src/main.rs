@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 #![allow(unused_imports)]
-
+use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
+use std::path::Path;
+use chrono::prelude::*;
 use dotenv;
 use serenity::{
     async_trait,
@@ -9,9 +11,11 @@ use serenity::{
 };
 
 struct Afkers {
-	snowflake: u64,
-	lastseen: String,
+	snowflake: String,
+	timestamp: String,
 }
+
+const DATA: &str = "data.json";
 
 struct Handler;
 
@@ -19,11 +23,30 @@ struct Handler;
 impl EventHandler for Handler {
 	
     async fn message(&self, _ctx: Context, msg: Message) {
-		let timestamp = msg.timestamp;
-		let snowflake = msg.author.id;
-		let dud = Afkers{snowflake: *msg.author.id.as_u64(), lastseen: msg.timestamp.to_string()};
-    	println!("Snowflake - {} | Timestamp - {}", snowflake, timestamp);
-		println!("{} {}", dud.snowflake, dud.lastseen);
+		let dud = Afkers{
+			snowflake: msg.author.id.to_string(),
+			timestamp: msg.timestamp.to_string()
+		};
+
+    	println!("Snowflake - {} | Timestamp - {}", dud.snowflake, dud.timestamp);
+
+
+		// PicleDB
+		let mut store = PickleDb::load(
+			DATA, 
+			PickleDbDumpPolicy::AutoDump, 
+			SerializationMethod::Json
+		).unwrap();
+
+		let check = store
+			.get::<String>(&dud.snowflake)
+			.unwrap()
+			.parse::<DateTime<Utc>>()
+			.unwrap();
+
+
+		println!("{}", check);
+		store.set(&dud.snowflake, &dud.timestamp).unwrap();
     }
 
 	// async fn guild_member_addition(&self, ctx: Context, gid: GuildId, member: Member,){
@@ -38,6 +61,14 @@ impl EventHandler for Handler {
 async fn main() {
 
 	dotenv::dotenv().ok();
+
+	// PicleDB
+	if !(Path::new(DATA).exists()) {
+		let _file = PickleDb::new(
+			DATA, 
+			PickleDbDumpPolicy::AutoDump, 
+			SerializationMethod::Json);
+	}
 
 	// Serenity
 	let dctoken = dotenv::var("DCTOKEN")
