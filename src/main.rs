@@ -162,4 +162,4 @@ fn delete_db(path: &String) {
 	}
 }
 
-// TODO fn load_db(path: &string) -> PicleDb {}
+// TODO fn load_db(path: &string) -> PickleDb {}
