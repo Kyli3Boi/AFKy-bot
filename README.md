@@ -1,4 +1,4 @@
-[!image](./afky-bot-logo.png)
+[](./afky-bot-logo.png)
 # AFKy bot
  Away From Keyboard (for a) year is a discord bot that notifies user that they have been away for a year.
  I might add option to set durration but for now a year it is.
