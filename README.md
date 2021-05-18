@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/qawery-just-sad/AFKy-bot">
-    <img src="afky-bot-logo.png" alt="Logo" width="80" height="80">
+    <img src="afky-bot-logo.png" alt="Logo" width="200" height="200">
   </a>
 </p>
 # AFKy bot
