@@ -14,5 +14,9 @@
  3. NOT use unrap - idk this shit confusing
  4. use js - fuck u i want rust
 
+ # License
+ The source code for AFKy-bot is licensed under [Mozilla Public License Version 2.0](./LICENSE.md)
+ The AFKy-bot logo is licensed under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
+
  # Who created that logo?
  My sister, and I like it, you don't have to.
