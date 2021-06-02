@@ -4,7 +4,7 @@ use std::{
 	error::Error,
 	fmt::format,
 	fs,
-	path::Path
+	path::Path,
 };
 use dotenv;
 use pickledb::{
@@ -24,12 +24,20 @@ use serenity::{
 		gateway::Ready,
 		guild::*,
 		user::*,
-		id::*
+		id::*,
+		interactions::{
+            ApplicationCommand,
+            ApplicationCommandInteractionDataOptionValue,
+            ApplicationCommandOptionType,
+            Interaction,
+            InteractionResponseType,
+            InteractionType,
+        },
 	},
 	prelude::*,
 	builder::CreateMessage,
 	http::AttachmentType,
-	client::bridge::gateway::GatewayIntents
+	client::bridge::gateway::GatewayIntents,
 };
 
 struct Handler;
@@ -124,9 +132,224 @@ impl EventHandler for Handler {
 		delete_db(&path);
 	}
 
+	// Command interaction
+	async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if interaction.kind == InteractionType::ApplicationCommand {
+            if let Some(data) = interaction.data.as_ref() {
+                let content = match data.name.as_str() {
+                    "language" => {
+						let options = data
+							.options
+							.get(0)
+							.expect("Expected user option")
+							.resolved
+							.as_ref()
+							.expect("Expected a language");
+
+						if let ApplicationCommandInteractionDataOptionValue::String(String) =
+							options
+						{
+							format!("Selected {}", String)
+						}
+						else {
+							"Please select a language".to_string()
+						}
+						
+					},
+                    "interval" => {
+                        let options = data
+                            .options
+                            .get(0)
+                            .expect("Expected user option")
+                            .resolved
+                            .as_ref()
+                            .expect("Expected a interval");
+
+                        if let ApplicationCommandInteractionDataOptionValue::Integer(Integar) =
+                            options
+                        {
+							// This is to display type (day/week) instead of Integar number, to user (Possibly another way to do this?)
+                            let Interval:String;
+							let TimeDay:i64 = 86400;
+							let TimeWeek:i64 = 604800;
+							let TimeMonth:i64 = 2629800;
+							
+							if i64::eq(&TimeDay, Integar) {
+								Interval = "1 Day".to_string()
+							}
+							else if i64::eq(&TimeWeek, Integar) {
+								Interval = "1 Week".to_string()
+							}
+							else if i64::eq(&TimeMonth, Integar) {
+								Interval = "1 Month".to_string()
+							}
+							else {
+								Interval = "1 Year".to_string()
+							}
+							
+							format!("Notification interval set to {}", Interval)
+                        
+						} else {
+                            "Please select a interval".to_string()
+                        }
+                    },
+					"clearalldata" => {
+						let options = data
+							.options
+							.get(0)
+							.expect("Expected user option")
+							.resolved
+							.as_ref()
+							.expect("Expected a answer");
+
+						if let ApplicationCommandInteractionDataOptionValue::String(String) =
+							options
+						{
+							if String::eq(String, "Yes") {
+								format!("You Selected {}. Kiss your data goodbye", String)
+							}
+							else {
+								"Phew close call, you selected No".to_string()
+							}
+							
+						}
+						else {
+							"Please select a option".to_string()
+						}
+					},
+					"github" => {
+						let options = data
+							.options
+							.get(0)
+							.expect("Expected user option")
+							.resolved
+							.as_ref()
+							.expect("Expected a answer");
+
+						if let ApplicationCommandInteractionDataOptionValue::String(_String) =
+							options
+						{
+							"https://github.com/qawery-just-sad/AFKy-bot".to_string()	
+						}
+						else {
+							":(".to_string()
+						}
+					},
+					"invite" => {
+						let options = data
+							.options
+							.get(0)
+							.expect("Expected user option")
+							.resolved
+							.as_ref()
+							.expect("Expected a answer");
+
+						if let ApplicationCommandInteractionDataOptionValue::String(_String) =
+							options
+						{
+							"https://discord.com/invite".to_string() // Placeholder
+						}
+						else {
+							":(".to_string()
+						}
+					},
+                    _ => "not implemented :(".to_string()
+                };
+
+                if let Err(why) = interaction
+                    .create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content(content))
+                    })
+                    .await
+                {
+                    println!("Cannot respond to slash command: {}", why);
+                }
+            }
+        }
+    }
+
 	async fn ready(&self, ctx: Context, ready: Ready) {
 		println!("{} is connected!", ready.user.name);
 		ctx.set_presence(None, OnlineStatus::Idle).await;
+
+		// Commands
+		let commands = ApplicationCommand::create_global_application_commands(&ctx.http, |commands| {
+            commands
+                 .create_application_command(|command| {
+                    command.name("language")
+					.description("Sets your preferred language")
+					.create_option(|option| {
+						option
+							.name("language")
+							.description("Your preferred language")
+							.kind(ApplicationCommandOptionType::String)
+							.required(true)
+							.add_string_choice("English", "English")
+							.add_string_choice("French", "French")
+							.add_string_choice("Spanish", "Spanish")
+							.add_string_choice("Russian", "Russian")
+					})
+                })
+                .create_application_command(|command| {
+                    command.name("interval")
+					.description("Sets the notification interval")
+					.create_option(|option| {
+                        option
+                            .name("interval")
+                            .description("How long the player has to be AFK, for the notification to be sent")
+                            .kind(ApplicationCommandOptionType::Integer)
+                            .required(true)
+							.add_int_choice("1 Day", 86400)
+							.add_int_choice("1 Week", 604800)
+							.add_int_choice("1 Month", 2629800)
+							.add_int_choice("1 Year", 31557600)
+                    })
+                })
+                .create_application_command(|command| {
+                    command.name("clearalldata")
+					.description("Clears all data")
+					.create_option(|option| {
+                            option
+                                .name("clearalldata")
+                                .description("Are you sure?")
+                                .kind(ApplicationCommandOptionType::String)
+                                .required(true)
+								.add_string_choice("No", "No")
+								.add_string_choice("No", "Noo")
+								.add_string_choice("Yes", "Yes")
+								.add_string_choice("No", "Nooo")
+                    })
+				})
+				.create_application_command(|command| {
+					command.name("github")
+					.description("Displays my Github URL")
+					.create_option(|option| {
+							option
+								.name("github")
+								.description("Display Github URL")
+								.kind(ApplicationCommandOptionType::String)
+								.required(true)
+								.add_string_choice("Yes", "Yes")
+					})
+                })
+				.create_application_command(|command| {
+					command.name("invite")
+					.description("Displays my invite URL")
+					.create_option(|option| {
+							option
+								.name("invite")
+								.description("Display invite URL")
+								.kind(ApplicationCommandOptionType::String)
+								.required(true)
+								.add_string_choice("Yes", "Yes")
+					})
+                })
+        })
+        .await;
+
+		println!("I now have the following global slash commands: {:#?}", commands);
 	}
 }
 
@@ -144,16 +367,22 @@ async fn main() {
 	let dctoken = dotenv::var("DCTOKEN")
 		.expect("Expected Discord token in the environment. Take example from \".exampledotenv\" and fill in \"DCTOKEN\"");
 	
+	let application_id: u64 =
+        dotenv::var("APPLICATION_ID")
+		.expect("Expected an application id in the environment")
+		.parse()
+		.expect("application id is not a valid id");
+
 	let mut client = Client::builder(&dctoken)
 		.event_handler(Handler)
 		.intents(GatewayIntents::all())
+		.application_id(application_id)
 		.await
 		.expect("Error while creating client");
 
 	if let Err(why) = client.start().await {
 		println!("Client error: {:?}", why);
 	}
-
 }
 
 fn create_db(path: &String) -> PickleDb {
